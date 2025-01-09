@@ -10,6 +10,7 @@ public abstract class ConsoleExporter<T> : BaseExporter<T>
 
     protected ConsoleExporter(ConsoleExporterOptions options)
     {
+        Console.WriteLine("x: Running ConsoleExporter from the source code.");
         this.options = options ?? new ConsoleExporterOptions();
 
         this.TagWriter = new ConsoleTagWriter(this.OnUnsupportedTagDropped);

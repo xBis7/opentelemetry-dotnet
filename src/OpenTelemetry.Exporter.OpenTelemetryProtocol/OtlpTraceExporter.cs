@@ -50,6 +50,7 @@ public class OtlpTraceExporter : BaseExporter<Activity>
         ExperimentalOptions experimentalOptions,
         OtlpExporterTransmissionHandler? transmissionHandler = null)
     {
+        Console.WriteLine("x: Running OtlpTraceExporter from the source code.");
         Debug.Assert(exporterOptions != null, "exporterOptions was null");
         Debug.Assert(sdkLimitOptions != null, "sdkLimitOptions was null");
 
