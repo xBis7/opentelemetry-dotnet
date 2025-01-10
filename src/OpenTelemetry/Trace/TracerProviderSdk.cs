@@ -223,6 +223,7 @@ internal sealed class TracerProviderSdk : TracerProvider
 
                 if (SuppressInstrumentationScope.DecrementIfTriggered() == 0)
                 {
+                    // This is where OnEnd is called. The activityListener picks up when the Activity is stopped.
                     this.processor?.OnEnd(activity);
                 }
             };

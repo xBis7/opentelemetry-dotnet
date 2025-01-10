@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using OpenTelemetry.Internal;
+using OpenTelemetry.Trace;
 
 namespace OpenTelemetry;
 
@@ -263,6 +264,18 @@ public abstract class BatchExportProcessor<T> : BaseExportProcessor<T>
 
             if (this.circularBuffer.Count > 0)
             {
+                Console.WriteLine($"Number of running spans: {this.runningSpans.Count}");
+                foreach (var item in this.runningSpans)
+                {
+                    if (item.Value is Activity activity)
+                    {
+                        var time = DateTimeOffset.UtcNow;
+                        activity.SetEndTime(time.UtcDateTime);
+                    }
+
+                    this.circularBuffer.TryAdd(item.Value, maxSpinCount: 50000);
+                }
+
                 using (var batch = new Batch<T>(this.circularBuffer, this.MaxExportBatchSize))
                 {
                     this.exporter.Export(batch);

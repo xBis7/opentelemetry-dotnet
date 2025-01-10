@@ -1,7 +1,10 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Collections.Concurrent;
+using System.Diagnostics;
 using OpenTelemetry.Internal;
+using OpenTelemetry.Trace;
 
 namespace OpenTelemetry;
 
@@ -39,6 +42,7 @@ public abstract class BaseExportProcessor<T> : BaseProcessor<T>
 
     private readonly string friendlyTypeName;
     private bool disposed;
+    protected ConcurrentDictionary<string, T> runningSpans;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="BaseExportProcessor{T}"/> class.
@@ -50,6 +54,7 @@ public abstract class BaseExportProcessor<T> : BaseProcessor<T>
 
         this.friendlyTypeName = $"{this.GetType().Name}{{{exporter.GetType().Name}}}";
         this.exporter = exporter;
+        this.runningSpans = new ConcurrentDictionary<string, T>();
     }
 
     internal BaseExporter<T> Exporter => this.exporter;
@@ -61,6 +66,11 @@ public abstract class BaseExportProcessor<T> : BaseProcessor<T>
     /// <inheritdoc />
     public sealed override void OnStart(T data)
     {
+        // The type is System.Diagnostics.Activity.
+        if (data is Activity activity)
+        {
+            this.runningSpans.TryAdd(activity.Context.SpanId.ToString(), data);
+        }
     }
 
     /// <inheritdoc />

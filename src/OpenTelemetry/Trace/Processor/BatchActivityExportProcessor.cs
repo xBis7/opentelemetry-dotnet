@@ -41,6 +41,14 @@ public class BatchActivityExportProcessor : BatchExportProcessor<Activity>
             return;
         }
 
+        Console.WriteLine($"End span: Current stored duration is {data.Duration.TotalMilliseconds} ms");
+        this.runningSpans.TryRemove(data.Context.SpanId.ToString(), out Activity removedData);
+
+        // There is already an EndTime due to the periodic export.
+        // Set EndTime to the current time.
+        var time = DateTimeOffset.UtcNow;
+        data.SetEndTime(time.UtcDateTime);
+
         this.OnExport(data);
     }
 }
