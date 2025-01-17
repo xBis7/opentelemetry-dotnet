@@ -154,7 +154,8 @@ public static class OtlpTraceExporterHelperExtensions
                 batchExportProcessorOptions!.MaxQueueSize,
                 batchExportProcessorOptions.ScheduledDelayMilliseconds,
                 batchExportProcessorOptions.ExporterTimeoutMilliseconds,
-                batchExportProcessorOptions.MaxExportBatchSize);
+                batchExportProcessorOptions.MaxExportBatchSize,
+                batchExportProcessorOptions.PartialSpansEnabled);
         }
     }
 }

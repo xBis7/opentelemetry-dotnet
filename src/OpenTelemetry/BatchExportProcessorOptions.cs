@@ -29,4 +29,9 @@ public class BatchExportProcessorOptions<T>
     /// Gets or sets the maximum batch size of every export. It must be smaller or equal to MaxQueueLength. The default value is 512.
     /// </summary>
     public int MaxExportBatchSize { get; set; } = BatchExportProcessor<T>.DefaultMaxExportBatchSize;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether partial spans should be enabled or not. The default value is false.
+    /// </summary>
+    public bool PartialSpansEnabled { get; set; } = BatchExportProcessor<T>.DefaultPartialSpansEnabled;
 }

@@ -22,6 +22,8 @@ public class BatchExportActivityProcessorOptions : BatchExportProcessorOptions<A
 
     internal const string ScheduledDelayEnvVarKey = "OTEL_BSP_SCHEDULE_DELAY";
 
+    internal const string PartialSpansEnabledEnvVarKey = "OTEL_BSP_PARTIAL_SPANS_ENABLED";
+
     /// <summary>
     /// Initializes a new instance of the <see cref="BatchExportActivityProcessorOptions"/> class.
     /// </summary>
@@ -50,6 +52,11 @@ public class BatchExportActivityProcessorOptions : BatchExportProcessorOptions<A
         if (configuration.TryGetIntValue(OpenTelemetrySdkEventSource.Log, ScheduledDelayEnvVarKey, out value))
         {
             this.ScheduledDelayMilliseconds = value;
+        }
+
+        if (configuration.TryGetBoolValue(OpenTelemetrySdkEventSource.Log, PartialSpansEnabledEnvVarKey, out bool isEnabled))
+        {
+            this.PartialSpansEnabled = isEnabled;
         }
     }
 }

@@ -328,7 +328,8 @@ public static class OtlpLogExporterHelperExtensions
                 batchOptions.MaxQueueSize,
                 batchOptions.ScheduledDelayMilliseconds,
                 batchOptions.ExporterTimeoutMilliseconds,
-                batchOptions.MaxExportBatchSize);
+                batchOptions.MaxExportBatchSize,
+                batchOptions.PartialSpansEnabled);
         }
     }
 

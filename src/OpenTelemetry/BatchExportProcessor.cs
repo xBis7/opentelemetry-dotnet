@@ -1,6 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using OpenTelemetry.Internal;
@@ -15,14 +16,21 @@ namespace OpenTelemetry;
 public abstract class BatchExportProcessor<T> : BaseExportProcessor<T>
     where T : class
 {
+    /// <summary>
+    /// A dictionary with all running spans. This is used when partial spans are enabled.
+    /// </summary>
+    protected ConcurrentDictionary<string, T> runningSpans;
+
     internal const int DefaultMaxQueueSize = 2048;
     internal const int DefaultScheduledDelayMilliseconds = 5000;
     internal const int DefaultExporterTimeoutMilliseconds = 30000;
     internal const int DefaultMaxExportBatchSize = 512;
+    internal const bool DefaultPartialSpansEnabled = false;
 
     internal readonly int MaxExportBatchSize;
     internal readonly int ScheduledDelayMilliseconds;
     internal readonly int ExporterTimeoutMilliseconds;
+    internal readonly bool PartialSpansEnabled;
 
     private readonly CircularBuffer<T> circularBuffer;
     private readonly Thread exporterThread;
@@ -41,12 +49,14 @@ public abstract class BatchExportProcessor<T> : BaseExportProcessor<T>
     /// <param name="scheduledDelayMilliseconds">The delay interval in milliseconds between two consecutive exports. The default value is 5000.</param>
     /// <param name="exporterTimeoutMilliseconds">How long the export can run before it is cancelled. The default value is 30000.</param>
     /// <param name="maxExportBatchSize">The maximum batch size of every export. It must be smaller or equal to maxQueueSize. The default value is 512.</param>
+    /// <param name="partialSpansEnabled">Gets or sets a value indicating whether partial spans should be enabled or not. The default value is false.</param>
     protected BatchExportProcessor(
         BaseExporter<T> exporter,
         int maxQueueSize = DefaultMaxQueueSize,
         int scheduledDelayMilliseconds = DefaultScheduledDelayMilliseconds,
         int exporterTimeoutMilliseconds = DefaultExporterTimeoutMilliseconds,
-        int maxExportBatchSize = DefaultMaxExportBatchSize)
+        int maxExportBatchSize = DefaultMaxExportBatchSize,
+        bool partialSpansEnabled = DefaultPartialSpansEnabled)
         : base(exporter)
     {
         Guard.ThrowIfOutOfRange(maxQueueSize, min: 1);
@@ -58,6 +68,8 @@ public abstract class BatchExportProcessor<T> : BaseExportProcessor<T>
         this.ScheduledDelayMilliseconds = scheduledDelayMilliseconds;
         this.ExporterTimeoutMilliseconds = exporterTimeoutMilliseconds;
         this.MaxExportBatchSize = maxExportBatchSize;
+        this.PartialSpansEnabled = partialSpansEnabled;
+        this.runningSpans = new ConcurrentDictionary<string, T>();
         this.exporterThread = new Thread(this.ExporterProc)
         {
             IsBackground = true,
@@ -264,16 +276,20 @@ public abstract class BatchExportProcessor<T> : BaseExportProcessor<T>
 
             if (this.circularBuffer.Count > 0)
             {
-                Console.WriteLine($"Number of running spans: {this.runningSpans.Count}");
-                foreach (var item in this.runningSpans)
+                Console.WriteLine($"Partial spans are enabled: {this.PartialSpansEnabled}");
+                if (this.PartialSpansEnabled)
                 {
-                    if (item.Value is Activity activity)
+                    Console.WriteLine($"Number of running spans: {this.runningSpans.Count}");
+                    foreach (var item in this.runningSpans)
                     {
-                        var time = DateTimeOffset.UtcNow;
-                        activity.SetEndTime(time.UtcDateTime);
-                    }
+                        if (item.Value is Activity activity)
+                        {
+                            var time = DateTimeOffset.UtcNow;
+                            activity.SetEndTime(time.UtcDateTime);
+                        }
 
-                    this.circularBuffer.TryAdd(item.Value, maxSpinCount: 50000);
+                        this.circularBuffer.TryAdd(item.Value, maxSpinCount: 50000);
+                    }
                 }
 
                 using (var batch = new Batch<T>(this.circularBuffer, this.MaxExportBatchSize))

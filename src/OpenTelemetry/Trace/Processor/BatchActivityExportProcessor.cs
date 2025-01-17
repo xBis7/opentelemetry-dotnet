@@ -18,19 +18,31 @@ public class BatchActivityExportProcessor : BatchExportProcessor<Activity>
     /// <param name="scheduledDelayMilliseconds"><inheritdoc cref="BatchExportProcessor{T}.BatchExportProcessor" path="/param[@name='scheduledDelayMilliseconds']"/></param>
     /// <param name="exporterTimeoutMilliseconds"><inheritdoc cref="BatchExportProcessor{T}.BatchExportProcessor" path="/param[@name='exporterTimeoutMilliseconds']"/></param>
     /// <param name="maxExportBatchSize"><inheritdoc cref="BatchExportProcessor{T}.BatchExportProcessor" path="/param[@name='maxExportBatchSize']"/></param>
+    /// <param name="partialSpansEnabled"><inheritdoc cref="BatchExportProcessor{T}.BatchExportProcessor" path="/param[@name='partialSpansEnabled']"/></param>
     public BatchActivityExportProcessor(
         BaseExporter<Activity> exporter,
         int maxQueueSize = DefaultMaxQueueSize,
         int scheduledDelayMilliseconds = DefaultScheduledDelayMilliseconds,
         int exporterTimeoutMilliseconds = DefaultExporterTimeoutMilliseconds,
-        int maxExportBatchSize = DefaultMaxExportBatchSize)
+        int maxExportBatchSize = DefaultMaxExportBatchSize,
+        bool partialSpansEnabled = DefaultPartialSpansEnabled)
         : base(
             exporter,
             maxQueueSize,
             scheduledDelayMilliseconds,
             exporterTimeoutMilliseconds,
-            maxExportBatchSize)
+            maxExportBatchSize,
+            partialSpansEnabled)
     {
+    }
+
+    /// <inheritdoc />
+    public override void OnStart(Activity data)
+    {
+        if (this.PartialSpansEnabled)
+        {
+            this.runningSpans.TryAdd(data.Context.SpanId.ToString(), data);
+        }
     }
 
     /// <inheritdoc />
@@ -41,13 +53,16 @@ public class BatchActivityExportProcessor : BatchExportProcessor<Activity>
             return;
         }
 
-        Console.WriteLine($"End span: Current stored duration is {data.Duration.TotalMilliseconds} ms");
-        this.runningSpans.TryRemove(data.Context.SpanId.ToString(), out Activity removedData);
+        if (this.PartialSpansEnabled)
+        {
+            Console.WriteLine($"End span: Current stored duration is {data.Duration.TotalMilliseconds} ms");
+            this.runningSpans.TryRemove(data.Context.SpanId.ToString(), out Activity removedData);
 
-        // There is already an EndTime due to the periodic export.
-        // Set EndTime to the current time.
-        var time = DateTimeOffset.UtcNow;
-        data.SetEndTime(time.UtcDateTime);
+            // There is already an EndTime due to the periodic export.
+            // Set EndTime to the current time.
+            var time = DateTimeOffset.UtcNow;
+            data.SetEndTime(time.UtcDateTime);
+        }
 
         this.OnExport(data);
     }
