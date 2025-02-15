@@ -6,7 +6,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation;
+using OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.Serializer;
 using OpenTelemetry.Internal;
+using OpenTelemetry.Resources;
 
 namespace OpenTelemetry.Trace;
 
@@ -15,6 +17,20 @@ namespace OpenTelemetry.Trace;
 /// </summary>
 public static class OtlpTraceExporterHelperExtensions
 {
+
+    public static byte[] SerializeTraceAndGetBytes(Activity activity)
+    {
+        byte[] buffer = new byte[750000];
+
+        Console.WriteLine("x1: " + buffer);
+        var sdkLimitOptions = new SdkLimitOptions();
+        // Resource resource = new Resource();
+        int writePosition = ProtobufOtlpTraceSerializer
+            .WriteTraceData(ref buffer, 0, sdkLimitOptions, null, new Batch<Activity>(activity));
+        Console.WriteLine("x2: " + buffer);
+        return buffer;
+    }
+
     /// <summary>
     /// Adds OpenTelemetry Protocol (OTLP) exporter to the TracerProvider.
     /// </summary>
